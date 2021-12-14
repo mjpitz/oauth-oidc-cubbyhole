@@ -8,7 +8,7 @@ import (
 	"github.com/mjpitz/myago/vue"
 )
 
-//go:generate npm run build
+//go:generate npm install && npm run build
 
 //go:embed dist/*
 var assets embed.FS
