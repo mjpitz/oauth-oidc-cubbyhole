@@ -3,9 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/aes"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -13,23 +13,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/oauth2.v3/utils/uuid"
 )
-
-type rt struct {
-	endpoint oauth2.Endpoint
-	key      string
-}
-
-func (r *rt) RoundTrip(request *http.Request) (*http.Response, error) {
-	// when we go to the auth url, add an encryption key...
-	// we'll need to figure out how to instruct others
-	if strings.HasPrefix(request.URL.String(), r.endpoint.AuthURL) {
-		request.URL.Fragment = r.key
-	}
-
-	return http.DefaultTransport.RoundTrip(request)
-}
-
-var _ http.RoundTripper = &rt{}
 
 func main() {
 	ctx := context.Background()
@@ -48,6 +31,10 @@ func main() {
 	}
 
 	userKey := "testEncryptionKey"
+	c, err := aes.NewCipher([]byte(userKey))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	svr := &http.Server{
 		Addr:    ":8080",
@@ -72,11 +59,23 @@ func main() {
 			return
 		}
 
-		if token != nil {
-			// store token somewhere
-			log.Println(token)
-			// client := oauth2Config.Client(ctx, token)
+		userInfo, err := provider.UserInfo(ctx, oauth2Config.TokenSource(ctx, token))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
+
+		mp := map[string]string{}
+		err = userInfo.Claims(mp)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		encryptionKey := make([]byte, 0)
+		c.Decrypt(encryptionKey, []byte(mp["cubbyhole"]))
+
+		// cache encryption key, userInfo, and token for later use
 
 		defer svr.Shutdown(ctx)
 
