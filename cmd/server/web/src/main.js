@@ -9,7 +9,7 @@ const router = createRouter({
     history: createWebHistory(process.env.BASE_URL),
     routes: [
         {path: "/login", name: "LogIn", component: LogIn},
-        {path: "/consent", name: "Consent", component: Consent},
+        {path: "/oauth/authorize", name: "Consent", component: Consent},
     ],
 })
 

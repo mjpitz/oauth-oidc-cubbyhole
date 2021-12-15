@@ -68,8 +68,8 @@ func main() {
 			return
 		}
 
-		mp := map[string]string{}
-		err = userInfo.Claims(mp)
+		mp := map[string]interface{}{}
+		err = userInfo.Claims(&mp)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -85,7 +85,7 @@ func main() {
 		}
 
 		encryptionKey := make([]byte, 0)
-		c.Decrypt(encryptionKey, []byte(mp["cubbyhole"]))
+		c.Decrypt(encryptionKey, []byte(mp["cubbyhole"].(string)))
 
 		// cache encryption key, userInfo, and token for later use
 

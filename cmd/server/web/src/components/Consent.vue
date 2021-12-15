@@ -6,18 +6,28 @@
           <p v-for="err in this.errors" :key="err">{{ err }}</p>
         </div>
 
-        <form v-else @submit.prevent="submitForm">
-          <label for="project">Project</label>
-          <input type="text" id="project" placeholder="Project" v-model="project"/>
+        <div v-else>
+          <form>
+            <label for="project">Project</label>
+            <input type="text" id="project" placeholder="Project" v-model="project"/>
 
-          <label for="bucket">Bucket</label>
-          <input type="text" id="bucket" placeholder="Bucket" v-model="bucket"/>
+            <label for="bucket">Bucket</label>
+            <input type="text" id="bucket" placeholder="Bucket" v-model="bucket"/>
 
-          <label for="passphrase">Passphrase</label>
-          <input type="password" id="passphrase" placeholder="Passphrase" v-model="passphrase"/>
+            <label for="passphrase">Passphrase</label>
+            <input type="password" id="passphrase" placeholder="Passphrase" v-model="passphrase"/>
+          </form>
 
-          <input type="submit" value="Authorize"/>
-        </form>
+          <form method="post">
+            <input type="hidden" name="scope" v-model="fullScope"/>
+            <input type="hidden" name="redirect_uri" v-model="appInfo.redirectURI"/>
+            <input type="hidden" name="client_id" v-model="appInfo.clientID"/>
+            <input type="hidden" name="state" v-model="appInfo.state"/>
+            <input type="hidden" name="response_type" v-model="appInfo.responseType"/>
+
+            <input type="submit" value="Authorize"/>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -74,48 +84,26 @@ export default {
       return
     }
 
+    localStorage.removeItem("user")
     this.cubbyholeKey = secret
   },
 
-  methods: {
-    async submitForm() {
-      let key = Buffer.from(this.cubbyholeKey, "hex").toString()
-      let out = CryptoJS.AES.encrypt(this.passphrase, key, {})
-
-      // use cubbyholeKey to encrypt passphrase
-      const resp = await fetch("/oauth/authorize", {
-        method: "POST",
-        redirect: "manual",
-        headers: {"Content-Type": "application/x-www-form-urlencoded"},
-        body: FORM.stringify({
-          redirect_uri: this.appInfo.redirectURI,
-          client_id: this.appInfo.clientID,
-          state: this.appInfo.state,
-          response_type: this.appInfo.responseType,
-          scope: [
-            this.appInfo.scope,
-            `project:${this.project}`,
-            `bucket:${this.bucket}`,
-            `cubbyhole:${out}`
-          ].join(" "),
-        })
-      })
-
-      await resp.text()
-
-      // todo: redirect back to app afterward
+  computed: {
+    fullScope() {
+      return [
+        this.appInfo.scope,
+        `project:${this.project}`,
+        `bucket:${this.bucket}`,
+        `cubbyhole:${this.cubbyhole}`
+      ].join(' ')
     },
-  }
-}
 
-const FORM = {
-  stringify(obj) {
-    let payload = ""
-    Object.keys(obj).forEach((key) => {
-      payload += encodeURIComponent(key) + "=" + encodeURIComponent(obj[key]) + "&"
-    })
-    return payload
-  }
+    cubbyhole() {
+      let key = Buffer.from(this.cubbyholeKey, "hex").toString()
+
+      return CryptoJS.AES.encrypt(this.passphrase, key, {})
+    }
+  },
 }
 </script>
 

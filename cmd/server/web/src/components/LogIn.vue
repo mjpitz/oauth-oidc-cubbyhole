@@ -40,7 +40,6 @@ export default {
     async submitForm() {
       const resp = await fetch("/oauth/login", {
         method: "POST",
-        redirect: "manual",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: this.username,
@@ -57,7 +56,7 @@ export default {
 
       localStorage.setItem("user", "username");
 
-      return this.$router.push("/consent");
+      return this.$router.push("/oauth/authorize");
     }
   }
 }
