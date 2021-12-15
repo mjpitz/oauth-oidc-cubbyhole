@@ -15,11 +15,12 @@
             <input type="text" id="bucket" placeholder="Bucket" v-model="bucket"/>
 
             <label for="passphrase">Passphrase</label>
-            <input type="password" id="passphrase" placeholder="Passphrase" v-model="passphrase"/>
+            <input type="password" id="passphrase" placeholder="Passphrase" v-model="passphrase"
+                   @blur="updateCubbyhole"/>
           </form>
 
           <form method="post">
-            <input type="hidden" name="scope" v-model="fullScope"/>
+            <input type="hidden" name="scope" v-model="scope"/>
             <input type="hidden" name="redirect_uri" v-model="appInfo.redirectURI"/>
             <input type="hidden" name="client_id" v-model="appInfo.clientID"/>
             <input type="hidden" name="state" v-model="appInfo.state"/>
@@ -45,6 +46,7 @@ export default {
       bucket: "",
       passphrase: "",
       cubbyholeKey: "",
+      cubbyhole: "",
       errors: [],
     }
   },
@@ -89,7 +91,7 @@ export default {
   },
 
   computed: {
-    fullScope() {
+    scope() {
       return [
         this.appInfo.scope,
         `project:${this.project}`,
@@ -97,12 +99,20 @@ export default {
         `cubbyhole:${this.cubbyhole}`
       ].join(' ')
     },
+  },
 
-    cubbyhole() {
-      let key = Buffer.from(this.cubbyholeKey, "hex").toString()
+  methods: {
+    updateCubbyhole() {
+      let passphrase = CryptoJS.enc.Utf8.parse(this.passphrase)
+      let cubbyholeKey = CryptoJS.enc.Hex.parse(this.cubbyholeKey)
 
-      return CryptoJS.AES.encrypt(this.passphrase, key, {})
-    }
+      let encrypted = CryptoJS.AES.encrypt(passphrase, cubbyholeKey, {
+        iv: CryptoJS.lib.WordArray.create(),
+        format: CryptoJS.enc.Hex,
+      })
+
+      this.cubbyhole = encrypted.toString(CryptoJS.format.Hex)
+    },
   },
 }
 </script>

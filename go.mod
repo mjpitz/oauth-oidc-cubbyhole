@@ -15,7 +15,10 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
-require github.com/go-oauth2/oauth2/v4 v4.4.2
+require (
+	github.com/go-oauth2/oauth2/v4 v4.4.2
+	github.com/go-session/session/v3 v3.1.5
+)
 
 require (
 	github.com/golang-jwt/jwt v3.2.1+incompatible // indirect

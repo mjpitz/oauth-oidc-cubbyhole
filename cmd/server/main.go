@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/go-session/session"
-	"github.com/mjpitz/oauth2-oidc-key-exchange/cmd/server/web"
 	"github.com/go-oauth2/oauth2/v4/errors"
 	"github.com/go-oauth2/oauth2/v4/generates"
 	"github.com/go-oauth2/oauth2/v4/manage"
 	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-oauth2/oauth2/v4/store"
+	"github.com/go-session/session"
+	"github.com/mjpitz/oauth2-oidc-key-exchange/cmd/server/web"
 )
 
 func main() {
@@ -175,7 +175,7 @@ func main() {
 	http.Handle("/", webHandle)
 
 	log.Println("starting server on :9096")
-	log.Fatal(http.ListenAndServe(":9096", nil))
+	log.Fatal(http.ListenAndServe("0.0.0.0:9096", nil))
 }
 
 type providerJSON struct {

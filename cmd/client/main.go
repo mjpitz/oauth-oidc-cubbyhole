@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/aes"
+	"crypto/cipher"
 	"encoding/hex"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/go-session/session"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/oauth2.v3/utils/uuid"
@@ -37,15 +37,11 @@ func main() {
 		Handler: http.DefaultServeMux,
 	}
 
+	rawKey := uuid.Must(uuid.NewRandom()).Bytes()
+	rawKey = append(rawKey, uuid.Must(uuid.NewRandom()).Bytes()...)
+	cubbyholeKey := hex.EncodeToString(rawKey)
+
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		rawKey := uuid.Must(uuid.NewRandom()).Bytes()
-		rawKey = append(rawKey, uuid.Must(uuid.NewRandom()).Bytes()...)
-		cubbyholeKey := hex.EncodeToString(rawKey)
-
-		store, _ := session.Start(r.Context(), w, r)
-		store.Set("cubbyholeKey", cubbyholeKey)
-		store.Save()
-
 		state := uuid.Must(uuid.NewRandom()).String()
 		redir := oauth2Config.AuthCodeURL(state)
 		redir = redir + "#" + cubbyholeKey
@@ -54,6 +50,13 @@ func main() {
 	})
 
 	http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			go func() {
+				time.Sleep(5 * time.Second)
+				svr.Shutdown(ctx)
+			}()
+		}()
+
 		q := r.URL.Query()
 
 		token, err := oauth2Config.Exchange(ctx, q.Get("code"))
@@ -75,21 +78,22 @@ func main() {
 			return
 		}
 
-		store, _ := session.Start(r.Context(), w, r)
-		key, _ := store.Get("cubbyholeKey")
-		cubbyholeKey, _ := hex.DecodeString(key.(string))
+		key, _ := hex.DecodeString(cubbyholeKey)
 
-		c, err := aes.NewCipher(cubbyholeKey)
+		c, err := aes.NewCipher(key)
 		if err != nil {
-			log.Fatal(err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 
-		encryptionKey := make([]byte, 0)
-		c.Decrypt(encryptionKey, []byte(mp["cubbyhole"].(string)))
+		cubbyhole, _ := hex.DecodeString(mp["cubbyhole"].(string))
+		passphrase := make([]byte, len(cubbyhole))
 
-		// cache encryption key, userInfo, and token for later use
+		cipher.NewCBCDecrypter(c, make([]byte, c.BlockSize())).CryptBlocks(passphrase, cubbyhole)
 
-		defer svr.Shutdown(ctx)
+		log.Println("cubbyhole value: ", string(passphrase))
+
+		// cache cubbyhole value, userInfo, and token for later use
 
 		http.ServeContent(w, r, "", time.Now(), bytes.NewReader(nil))
 	})
