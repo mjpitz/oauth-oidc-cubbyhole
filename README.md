@@ -22,12 +22,12 @@ A few items to note:
    go generate ./...
    go run ./cmd/server/main.go
    ```
-   
+
 2. Run the client
    ```
    go run ./cmd/client/main.go
    ```
-   
+
 3. Open http://localhost:8080/login in your browser. You should be redirected to the consent screen where we can check
    for a user session before redirecting them to the login page. The redirect from consent to log in is currently not in
    place. You should be able to inspect localStorage to see the associated cubbyhole key cached.

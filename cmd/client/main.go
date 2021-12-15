@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/aes"
+	"encoding/hex"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/go-session/session"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/oauth2.v3/utils/uuid"
@@ -30,22 +32,23 @@ func main() {
 		Scopes:       []string{oidc.ScopeOpenID},
 	}
 
-	userKey := "testEncryptionKey"
-	c, err := aes.NewCipher([]byte(userKey))
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	svr := &http.Server{
 		Addr:    ":8080",
 		Handler: http.DefaultServeMux,
 	}
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		uuid := uuid.Must(uuid.NewRandom())
+		rawKey := uuid.Must(uuid.NewRandom()).Bytes()
+		rawKey = append(rawKey, uuid.Must(uuid.NewRandom()).Bytes()...)
+		cubbyholeKey := hex.EncodeToString(rawKey)
 
-		redir := oauth2Config.AuthCodeURL(uuid.String())
-		redir = redir + "#" + userKey
+		store, _ := session.Start(r.Context(), w, r)
+		store.Set("cubbyholeKey", cubbyholeKey)
+		store.Save()
+
+		state := uuid.Must(uuid.NewRandom()).String()
+		redir := oauth2Config.AuthCodeURL(state)
+		redir = redir + "#" + cubbyholeKey
 
 		http.Redirect(w, r, redir, http.StatusFound)
 	})
@@ -70,6 +73,15 @@ func main() {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
+		}
+
+		store, _ := session.Start(r.Context(), w, r)
+		key, _ := store.Get("cubbyholeKey")
+		cubbyholeKey, _ := hex.DecodeString(key.(string))
+
+		c, err := aes.NewCipher(cubbyholeKey)
+		if err != nil {
+			log.Fatal(err)
 		}
 
 		encryptionKey := make([]byte, 0)

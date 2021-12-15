@@ -9,12 +9,14 @@
   },
   "dependencies": {
     "core-js": "^3.6.5",
+    "crypto-js": "^4.1.1",
     "mini.css": "^3.0.1",
     "normalize.css": "^8.0.1",
     "vue": "^3.0.0",
     "vue-router": "^4.0.0-0"
   },
   "devDependencies": {
+    "@types/crypto-js": "^4.0.2",
     "@vue/cli-plugin-babel": "~4.5.0",
     "@vue/cli-plugin-eslint": "~4.5.0",
     "@vue/cli-plugin-router": "^4.5.15",

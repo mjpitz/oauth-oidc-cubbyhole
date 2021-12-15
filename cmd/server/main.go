@@ -68,16 +68,15 @@ func main() {
 	})
 
 	http.HandleFunc("/oauth/login", func(w http.ResponseWriter, r *http.Request) {
-		if r.Form == nil {
-			err := r.ParseForm()
-			if err != nil {
-				http.Error(w, "bad form data", http.StatusBadRequest)
-				return
-			}
+		values := make(map[string]string)
+		err := json.NewDecoder(r.Body).Decode(&values)
+		if err != nil {
+			http.Error(w, "", http.StatusInternalServerError)
+			return
 		}
 
-		username := r.FormValue("username")
-		password := r.FormValue("password")
+		username := values["username"]
+		password := values["password"]
 
 		if username == "test" && password == "test" {
 			store, err := session.Start(r.Context(), w, r)

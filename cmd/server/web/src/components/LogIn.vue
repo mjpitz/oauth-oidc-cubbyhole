@@ -5,11 +5,11 @@
         <div v-if="this.errors.length > 0">
           <p v-for="err in this.errors" :key="err">{{ err }}</p>
         </div>
-        <form v-else method="post" action="/oauth/login">
+        <form v-else @submit.prevent="submitForm">
           <label for="username">Username</label>
-          <input type="text" id="Username" placeholder="Username"/>
+          <input type="text" id="Username" placeholder="Username" v-model="username"/>
           <label for="password">Password</label>
-          <input type="password" id="password" placeholder="Password"/>
+          <input type="password" id="password" placeholder="Password" v-model="password"/>
           <input type="submit" value="Log In" />
         </form>
       </div>
@@ -23,19 +23,43 @@ import cubbyhole from "./cubbyhole";
 export default {
   data() {
     return {
+      username: "",
+      password: "",
       errors: [],
-    }
+    };
   },
 
   mounted() {
-    let [ secret, err ] = cubbyhole(window?.location?.hash?.substr(1))
+    let [ , err ] = cubbyhole(window?.location?.hash?.substr(1));
     if (err) {
-      this.error = this.errors.concat([ err.toString() ])
-      return
+      this.errors = ([ err.toString() ]);
     }
-
-    console.log(secret)
   },
+
+  methods: {
+    async submitForm() {
+      const resp = await fetch("/oauth/login", {
+        method: "POST",
+        redirect: "manual",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: this.username,
+          password: this.password,
+        }),
+      });
+
+      await resp.text()
+
+      if (resp.status >= 400) {
+        this.errors = [ resp.statusText ];
+        return;
+      }
+
+      localStorage.setItem("user", "username");
+
+      return this.$router.push("/consent");
+    }
+  }
 }
 </script>
 
