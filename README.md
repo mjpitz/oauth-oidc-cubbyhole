@@ -40,6 +40,6 @@ A few items to note:
 
 3. Open http://localhost:8080/login in your browser.
 
-4. Login with `test` and test`
+4. Login with `test` and `test`
 
 5. There aren't any requirements for the consent page, enter whatever data you like.
