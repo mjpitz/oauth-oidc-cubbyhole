@@ -1,18 +1,28 @@
 # OAuth / OIDC Cubbyhole
 
-Mostly a demo of the work I've been designing at Storj. This demonstrates how to create a client-only secret that can
-be used to create a secure cubbyhole that will allow a user to share secret data with a client application, but not the
-identity provider (such as an encryption key).
+Share secret data between client applications.
+
+This is mostly a demonstration of some of the work I've been evaluating at Storj. It shows how we can securely pass data
+from the client side of an OpenID Connect Identity Provider to a client application without the identity provider being
+exposed to the content in the cubbyhole (such as a passphrase or encryption key).
+
+## The gist
+
+- A client, registered with the OpenID Connect Identity Provider, passes along an AES encryption key as part of the
+  URL fragment (`/oauth/authorize?client_id=&scope=&state=&redirect_url=#key`).
+- The Identity Provider caches the fragment in local storage before redirecting the user to login.
+- After logging in, the user is presented with a consent screen where they can enter a plaintext value for their cubbyhole.
+- Using the key from the fragment, the browser can encrypt the cubbyhole value before sending it to the server.
+- After being authorized access, the application calls to obtain the users information.
+  - In addition to the standard user information in OIDC, the call can return the encrypted cubbyhole value.
 
 A few items to note:
 
-- The identity provider should use a single page application driven by react / vue
-  - Otherwise, rendering the consent screen can cause a redirect which will occur before we can cache the secret.
-  - See `server/web/src/components/Consent.vue` and `LogIn.vue` for a reference.
-- When the consent page loads, it should cache the encryption key in local storage BEFORE checking user auth and 
-  determining if the user needs to sign in.
-- Current example is done using go, but based on a cursory search most libraries should be able to support this.
-  - There might be a challenge here with some more opinionated frameworks, but special casing those shouldn't be too bad.
+- The identity provider SHOULD be implemented using a single page app (like React or Vue)
+  - Otherwise, the server may trigger a redirect and wipe the encryption key from the fragment
+- The OAuth workflow starts on the consent page. The encryption key and app info (client_id, etc) needs to be cached on
+  that page before redirecting.
+  - This is often done on the server as part of the user session.
 
 ## Running the code
 
@@ -28,15 +38,8 @@ A few items to note:
    go run ./cmd/client/main.go
    ```
 
-3. Open http://localhost:8080/login in your browser. You should be redirected to the consent screen where we can check
-   for a user session before redirecting them to the login page. The redirect from consent to log in is currently not in
-   place. You should be able to inspect localStorage to see the associated cubbyhole key cached.
+3. Open http://localhost:8080/login in your browser.
 
-4. After logging in, the user should come back to the consent screen. In the demo case, the consent form prompts the 
-   user for a passphrase. This passphrase would be encrypted using the cubbyhole key before being sent to the server as
-   part of the form data.
-     - For Storj, we would encrypt the derived encryption key, and not the bucket passphrase itself. The passphrase and
-       cubbyhole key would never be passed along to the server, only the encrypted payload.
+4. Login with `test` and test`
 
-5. After being authorized access, the calling app should be able to obtain the cubbyhole value from the user profile
-   (shown in cmd/client/main.go).
+5. There aren't any requirements for the consent page, enter whatever data you like.
