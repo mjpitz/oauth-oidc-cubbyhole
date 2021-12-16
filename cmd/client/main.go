@@ -5,9 +5,11 @@ import (
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/sha256"
 	"encoding/hex"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -79,8 +81,9 @@ func main() {
 		}
 
 		key, _ := hex.DecodeString(cubbyholeKey)
+		k := sha256.Sum256(key)
 
-		c, err := aes.NewCipher(key)
+		c, err := aes.NewCipher(k[:])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -91,7 +94,7 @@ func main() {
 
 		cipher.NewCBCDecrypter(c, make([]byte, c.BlockSize())).CryptBlocks(passphrase, cubbyhole)
 
-		log.Println("cubbyhole value: ", string(passphrase))
+		log.Println("cubbyhole value: ", strings.TrimSpace(string(passphrase)))
 
 		// cache cubbyhole value, userInfo, and token for later use
 

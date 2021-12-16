@@ -104,11 +104,11 @@ export default {
   methods: {
     updateCubbyhole() {
       let passphrase = CryptoJS.enc.Utf8.parse(this.passphrase)
-      let cubbyholeKey = CryptoJS.enc.Hex.parse(this.cubbyholeKey)
+      let cubbyholeKey = CryptoJS.SHA256(CryptoJS.enc.Hex.parse(this.cubbyholeKey))
 
       let encrypted = CryptoJS.AES.encrypt(passphrase, cubbyholeKey, {
         iv: CryptoJS.lib.WordArray.create(),
-        format: CryptoJS.enc.Hex,
+        format: CryptoJS.format.Hex,
       })
 
       this.cubbyhole = encrypted.toString(CryptoJS.format.Hex)
