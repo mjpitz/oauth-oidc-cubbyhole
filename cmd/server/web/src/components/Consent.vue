@@ -19,7 +19,7 @@
                    @blur="updateCubbyhole"/>
           </form>
 
-          <form method="post">
+          <form method="post" @submit="clearCubbyhole">
             <input type="hidden" name="scope" v-model="scope"/>
             <input type="hidden" name="redirect_uri" v-model="appInfo.redirectURI"/>
             <input type="hidden" name="client_id" v-model="appInfo.clientID"/>
@@ -112,6 +112,10 @@ export default {
       })
 
       this.cubbyhole = encrypted.toString(CryptoJS.format.Hex)
+    },
+
+    clearCubbyhole() {
+      localStorage.removeItem("oauth:cubbyhole:key")
     },
   },
 }

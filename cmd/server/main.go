@@ -28,7 +28,7 @@ func main() {
 	_ = clientStore.Set("testClient", &models.Client{
 		ID:     "testClient",
 		Secret: "testSecret",
-		Domain: "http://localhost:8080",
+		Domain: "http://localhost:9090",
 	})
 
 	manager := manage.NewDefaultManager()

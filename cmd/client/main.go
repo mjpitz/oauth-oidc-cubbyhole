@@ -29,13 +29,18 @@ func main() {
 	oauth2Config := oauth2.Config{
 		ClientID:     "testClient",
 		ClientSecret: "testSecret",
-		RedirectURL:  "http://localhost:8080/callback",
+		RedirectURL:  "http://localhost:9090/callback",
 		Endpoint:     provider.Endpoint(),
-		Scopes:       []string{oidc.ScopeOpenID},
+		Scopes:       []string{
+			oidc.ScopeOpenID,
+			"object:read",
+			"object:write",
+			"object:delete",
+		},
 	}
 
 	svr := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":9090",
 		Handler: http.DefaultServeMux,
 	}
 
@@ -107,6 +112,6 @@ func main() {
 		return svr.ListenAndServe()
 	})
 
-	log.Print("Open http://localhost:8080/login in your browser")
+	log.Print("Open http://localhost:9090/login in your browser")
 	group.Wait()
 }
